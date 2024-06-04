@@ -67,5 +67,18 @@ const login = async (req, res) => {
     }
 };
 
+const deleteUser = async (req, res) => {
+    const { email } = req.body;
+    console.log(email); 
+    const user = await Usermodel.findOneAndDelete({email:email});
 
-module.exports = { register, login };
+    console.log(user);
+    if (!user) {
+        return res.status(404).json({ message: "User not found" });
+    }else{
+        return res.status(200).json({ message: "User deleted successfully" });
+    }
+};
+
+
+module.exports = { register, login, deleteUser };
