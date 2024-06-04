@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+.custom-select .ant-select-selector {
+  border: none !important;
+  box-shadow: none !important; 
+  background-color: transparent !important;
+  height: auto !important;
+   padding: 0 !important;
+}
+.custom-dropdown .ant-select-item-option-content {
+  border: none !important;
+  padding: 0 !important;
+}
+.custom-time-picker-dropdown .ant-picker-time-panel-column {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.custom-date-picker-dropdown .ant-picker-content {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
