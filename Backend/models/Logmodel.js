@@ -23,7 +23,10 @@ const LogSchema = new mongoose.Schema({
     },
     issue:{
         type: String,
-    }
+    },
+    feedback:{
+        type: String,
+    },
 },{
     timestamps: true
 })

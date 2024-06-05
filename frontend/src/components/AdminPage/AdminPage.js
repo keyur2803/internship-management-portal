@@ -1,9 +1,19 @@
-import React, { useState } from 'react';
-import { Table, Button, message, Popconfirm } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Table, Button, message, Popconfirm, Modal, Space, Input, Empty } from 'antd';
 import 'tailwindcss/tailwind.css';
 
 const AdminPage = () => {
   const [allInternList, setAllInternList] = useState([]);
+  const [selectedInternLogs, setSelectedInternLogs] = useState([]);
+  const [selectedIntern, setSelectedIntern] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [feedbackInputVisible, setFeedbackInputVisible] = useState(false);
+  const [selectedLogId, setSelectedLogId] = useState(null);
+  const [feedbackInputValue, setFeedbackInputValue] = useState('');
+
+  useEffect(() => {
+    fetchInternList();
+  }, []);
 
   const fetchInternList = async () => {
     try {
@@ -43,13 +53,84 @@ const AdminPage = () => {
         setAllInternList(allInternList.filter(intern => intern.email !== email));
         message.success('User deleted successfully');
       } else {
-        // console.error('Failed to delete user');
         message.error('Failed to delete user');
       }
     } catch (error) {
-      // console.error('Failed to delete user', error);
       message.error('Failed to delete user');
     }
+  };
+
+  const showLogsModal = async (intern) => {
+    setSelectedIntern(intern);
+    try {
+      const response = await fetch(`/getmylogs?userID=${intern._id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedInternLogs(data.Logs);
+        setModalVisible(true);
+      } else {
+        message.error('Failed to fetch logs. Please try again.');
+      }
+    } catch (error) {
+      message.error('Failed to fetch logs. Please try again.');
+    }
+  };
+
+  const closeModal = () => {
+    setSelectedIntern(null);
+    setSelectedInternLogs([]);
+    setModalVisible(false);
+  };
+
+  const handleFeedbackInputChange = (logID, currentFeedback) => {
+    setSelectedLogId(logID);
+    setFeedbackInputValue(currentFeedback || '');
+    setFeedbackInputVisible(true);
+  };
+
+  const handleSaveFeedback = async () => {
+    try {
+      const response = await fetch(`/submitfeedback`, {
+        method: 'POST',
+        body: JSON.stringify({ logID: selectedLogId, feedback: feedbackInputValue }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (response.ok) {
+        message.success('Feedback submitted successfully.');
+        setFeedbackInputValue('');
+        setFeedbackInputVisible(false);
+
+        // Update the logs state to reflect the new feedback
+        const updatedLogs = selectedInternLogs.map(log => {
+          if (log._id === selectedLogId) {
+            return { ...log, feedback: feedbackInputValue };
+          }
+          return log;
+        });
+        setSelectedInternLogs(updatedLogs);
+      } else {
+        message.error('Failed to submit feedback. Please try again.');
+      }
+    } catch (error) {
+      message.error('Failed to submit feedback. Please try again.');
+    }
+  };
+
+  const handleCancelFeedback = () => {
+    setSelectedLogId(null);
+    setFeedbackInputValue('');
+    setFeedbackInputVisible(false);
   };
 
   const columns = [
@@ -99,21 +180,62 @@ const AdminPage = () => {
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <h1 className="text-2xl font-bold mb-4">Intern List</h1>
-      <Button
-        type="primary"
-        onClick={fetchInternList}
-        className="mb-4 bg-blue-500 hover:bg-blue-600 text-white"
-      >
-        Get Intern List
-      </Button>
       <Table
         columns={columns}
         dataSource={allInternList}
         rowKey="_id"
         className="bg-white rounded-lg shadow"
+        onRow={(record) => ({
+          onClick: () => showLogsModal(record),
+        })}
       />
+      <Modal
+        title={`Logs of ${selectedIntern ? selectedIntern.name : ''}`}
+        visible={modalVisible}
+        onCancel={closeModal}
+        footer={null}
+      >
+        {selectedInternLogs.length > 0 ? (
+          selectedInternLogs.map(log => (
+            <div key={log._id} className="mb-4">
+              <p><strong>Date:</strong> {log.date}</p>
+              <p><strong>Starting Time:</strong> {log.startingTime}</p>
+              <p><strong>Ending Time:</strong> {log.endingTime}</p>
+              <p><strong>Work Summary:</strong> {log.workSummary}</p>
+              {log.issue &&<p><strong>Issue:</strong> {log.issue}</p>}
+              {log.feedback && <p><strong>Feedback:</strong> {log.feedback}</p>}
+              <Space>
+                <Button
+                  type="default"
+                  onClick={() => handleFeedbackInputChange(log._id, log.feedback)}
+                  disabled={feedbackInputVisible && selectedLogId === log._id}
+                >
+                  {feedbackInputVisible && selectedLogId === log._id ? 'Cancel' : 'Feedback'}
+                </Button>
+                {feedbackInputVisible && selectedLogId === log._id && (
+                  <>
+                    <Input
+                      value={feedbackInputValue}
+                      onChange={(e) => setFeedbackInputValue(e.target.value)}
+                      onPressEnter={handleSaveFeedback}
+                    />
+                    <Button type="primary" onClick={handleSaveFeedback}>
+                    Save
+                    </Button>
+                    <Button onClick={handleCancelFeedback}>Cancel</Button>
+                  </>
+                )}
+              </Space>
+              <hr className="my-4" />
+            </div>
+          ))
+        ) : (
+          <Empty description="No logs available" />
+        )}
+      </Modal>
     </div>
   );
 };
 
 export default AdminPage;
+

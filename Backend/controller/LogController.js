@@ -1,6 +1,6 @@
 const logmodel = require("../models/Logmodel");
 
-
+// Add Log to the database
 const AddLog = async (req, res) => {
   const { startingTime, endingTime, date, workSummary, userID, issue } = req.body;
 
@@ -26,6 +26,23 @@ const AddLog = async (req, res) => {
   }
 };
 
+//delete log from the database
+const deleteLog = async (req, res) => {
+  const { logID } = req.body;
+  console.log(logID);
+  try {
+    
+    log=await logmodel.findByIdAndDelete(logID);
+    console.log(log);
+    if (!log) {
+      return res.status(404).json({ message: "Log not found" });
+    }
+    else res.json({ message: "Log deleted successfully" });
+  } catch (error) {
+    res.status(400).json({ message: "Error in deleting log" });
+  }
+};
+
 // get all logs of everyone in the system
 const getlogs = async (req, res) => {
   try {
@@ -47,4 +64,29 @@ const getlogsbyuser = async (req, res) => {
   }
 };
 
-module.exports = { AddLog, getlogs ,getlogsbyuser};
+
+const submitFeedback = async (req, res) => {
+  const { logID, feedback } = req.body;
+  try {
+    const log = await logmodel.findOneAndUpdate(
+      { _id: logID },
+      { $set: {feedback} },
+      { new: true }
+    );
+    // console.log(log);
+    if (!log) {
+      return res.status(404).json({ message: "Log not found" });
+    }
+
+    // Send a success response
+    res.json({ message: "Feedback submitted successfully", log });
+    console.log(log);
+  } catch (error) {
+    // Handle any errors
+    res.status(400).json({ message: "Error in submitting feedback", error });
+  }
+};
+
+
+
+module.exports = { AddLog, getlogs ,getlogsbyuser,deleteLog,submitFeedback};
